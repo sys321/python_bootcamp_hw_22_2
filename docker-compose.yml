@@ -1,0 +1,285 @@
+version: '3.8'
+
+networks:
+  t22_network:
+    name: t22_network
+
+
+volumes:
+  t22_postgres_volume:
+    name: t22_postgres_volume
+
+
+services:
+  rabbitmq:
+    container_name: t22_rabbitmq
+    image: rabbitmq:3-management
+    restart: always
+    ports:
+      - 15672:15672
+      - 5672:5672
+    environment:
+      - RABBITMQ_DEFAULT_USER=tmp_user
+      - RABBITMQ_DEFAULT_PASS=tmp_password
+      - RABBITMQ_NODE_PORT=5672
+    networks:
+      - t22_network
+
+
+  redis:
+    container_name: t22_redis
+    image: redis
+    restart: always
+    environment:
+      - REDIS_PORT_NUMBER=6379
+      #- REDIS_PASSWORD=tmp_password
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - 6379:6379
+    networks:
+      - t22_network
+
+
+  postgres:
+    container_name: t22_postgres
+    image: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=tmp_user
+      - POSTGRES_PASSWORD=tmp_password
+      - POSTGRES_HOST=localhost
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=tmp_db
+    volumes:
+      - t22_postgres_volume:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    networks:
+      - t22_network
+
+
+  ms_1_ui:
+    container_name: t22_ms_1_ui
+    build:
+      context: .
+      dockerfile: ./ms_1_ui/dockerfile
+    image: t22_ms_1_ui_image
+    restart: always
+    environment:
+      # задержка перед запуском сервиса (секунды)
+      - MS_UI_RUN_DELAY=90
+      # адрес запуска сервиса внутри контейнера (fastapi)
+      - MS_UI_FASTAPI_HOST=0.0.0.0
+      - MS_UI_FASTAPI_PORT=8001
+      # как сервис будет обращаться к db
+      - MS_DB_HOST=t22_ms_2_db
+      - MS_DB_PORT=8002
+      # как сервис будет обращаться к mb
+      - MS_MB_HOST=t22_ms_3_mb
+      - MS_MB_PORT=8003
+      # как сервис будет обращаться к cache
+      - MS_CACHE_HOST=t22_ms_6_cache
+      - MS_CACHE_PORT=8006
+      # как юнит-тесты изнутри контейнера будут обращаться к сервису
+      - MS_UI_HOST=t22_ms_1_ui
+      - MS_UI_PORT=8001
+      # данные для юнит-тестов
+      - UT_USER_EMAIL=${UT_USER_EMAIL}
+      - UT_COUNTRY=Russia
+    ports:
+      - 8001:8001
+    networks:
+      - t22_network
+    depends_on:
+      - ms_2_db
+      - ms_3_mb
+      - ms_6_cache
+
+
+  ms_2_db:
+    container_name: t22_ms_2_db
+    build:
+      context: .
+      dockerfile: ./ms_2_db/dockerfile
+    image: t22_ms_2_db_image
+    restart: always
+    environment:
+      # задержка перед запуском сервиса (секунды)
+      - MS_DB_RUN_DELAY=60
+      # адрес запуска сервиса внутри контейнера (fastapi)
+      - MS_DB_FASTAPI_HOST=0.0.0.0
+      - MS_DB_FASTAPI_PORT=8002
+      # как сервис будет обращаться к postgres
+      - POSTGRES_USER=tmp_user
+      - POSTGRES_PASSWORD=tmp_password
+      - POSTGRES_HOST=t22_postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=tmp_db
+      # как юнит-тесты изнутри контейнера будут обращаться к сервису
+      - MS_DB_HOST=t22_ms_2_db
+      - MS_DB_PORT=8002
+      # данные для юнит-тестов
+      - UT_USER_EMAIL=${UT_USER_EMAIL}
+      - UT_SUBSCRIBER_EMAIL=${UT_SUBSCRIBER_EMAIL}
+      - UT_COUNTRY=Russia
+    ports:
+      - 8002:8002
+    networks:
+      - t22_network
+    depends_on:
+      - postgres
+
+
+  ms_3_mb:
+    container_name: t22_ms_3_mb
+    build:
+      context: .
+      dockerfile: ./ms_3_mb/dockerfile
+    image: t22_ms_3_mb_image
+    restart: always
+    environment:
+      # задержка перед запуском сервиса (секунды)
+      - MS_MB_RUN_DELAY=60
+      # адрес запуска сервиса внутри контейнера (fastapi)
+      - MS_MB_FASTAPI_HOST=0.0.0.0
+      - MS_MB_FASTAPI_PORT=8003
+      # как сервис будет обращаться к rabbitmq
+      - RABBITMQ_USER=tmp_user
+      - RABBITMQ_PASSWORD=tmp_password
+      - RABBITMQ_HOST=t22_rabbitmq
+      - RABBITMQ_PORT=5672
+      # как юнит-тесты изнутри контейнера будут обращаться к сервису
+      - MS_MB_HOST=t22_ms_3_mb
+      - MS_MB_PORT=8003
+      # данные для юнит-тестов
+      - UT_USER_EMAIL=${UT_USER_EMAIL}
+      - UT_COUNTRY=Russia
+      - UT_COUNTRY_URL=https://en.wikipedia.org/wiki/Russia
+    ports:
+      - 8003:8003
+    networks:
+      - t22_network
+    depends_on:
+      - rabbitmq
+
+
+  ms_4_urlp:
+    container_name: t22_ms_4_urlp
+    build:
+      context: .
+      dockerfile: ./ms_4_urlp/dockerfile
+    image: t22_ms_4_urlp_image
+    restart: always
+    environment:
+      # задержка перед запуском сервиса (секунды)
+      - MS_URLP_RUN_DELAY=70
+      # как сервис будет обращаться к rabbitmq
+      - RABBITMQ_USER=tmp_user
+      - RABBITMQ_PASSWORD=tmp_password
+      - RABBITMQ_HOST=t22_rabbitmq
+      - RABBITMQ_PORT=5672
+      # как сервис будет обращаться к mb
+      - MS_MB_HOST=t22_ms_3_mb
+      - MS_MB_PORT=8003
+      # как сервис будет обращаться к cache
+      - MS_CACHE_HOST=t22_ms_6_cache
+      - MS_CACHE_PORT=8006
+      # данные для юнит-тестов
+      - UT_USER_EMAIL=${UT_USER_EMAIL}
+      - UT_COUNTRY=Russia
+      - UT_COUNTRY_URL=https://en.wikipedia.org/wiki/Russia
+    networks:
+      - t22_network
+    depends_on:
+      - ms_3_mb
+      - ms_6_cache
+
+
+  ms_5_fp:
+    container_name: t22_ms_5_fp
+    build:
+      context: .
+      dockerfile: ./ms_5_fp/dockerfile
+    image: t22_ms_5_fp_image
+    restart: always
+    environment:
+      # задержка перед запуском сервиса (секунды)
+      - MS_FP_RUN_DELAY=80
+      # как сервис будет обращаться к rabbitmq
+      - RABBITMQ_USER=tmp_user
+      - RABBITMQ_PASSWORD=tmp_password
+      - RABBITMQ_HOST=t22_rabbitmq
+      - RABBITMQ_PORT=5672
+      # как сервис будет отправлять email
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_SENDER_EMAIL=${SMTP_SENDER_EMAIL}
+      # данные для юнит-тестов
+      - UT_USER_EMAIL=${UT_USER_EMAIL}
+      - UT_COUNTRY=Russia
+      - UT_COUNTRY_URL=https://en.wikipedia.org/wiki/Russia
+      - UT_NA_URL=https://upload.wikimedia.org/wikipedia/commons/transcoded/4/41/National_Anthem_of_Russia_%282000%29%2C_instrumental%2C_one_verse.ogg/National_Anthem_of_Russia_%282000%29%2C_instrumental%2C_one_verse.ogg.mp3
+    networks:
+      - t22_network
+    depends_on:
+      - ms_4_urlp
+
+
+  ms_6_cache:
+    container_name: t22_ms_6_cache
+    build:
+      context: .
+      dockerfile: ./ms_6_cache/dockerfile
+    image: t22_ms_6_cache_image
+    restart: always
+    environment:
+      # задержка перед запуском сервиса (секунды)
+      - MS_CACHE_RUN_DELAY=60
+      # адрес запуска сервиса внутри контейнера (fastapi)
+      - MS_CACHE_FASTAPI_HOST=0.0.0.0
+      - MS_CACHE_FASTAPI_PORT=8006
+      # как сервис будет обращаться к redis
+      - REDIS_HOST=t22_redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=tmp_password
+      # как юнит-тесты изнутри контейнера будут обращаться к сервису
+      - MS_CACHE_HOST=t22_ms_6_cache
+      - MS_CACHE_PORT=8006
+      # данные для юнит-тестов
+      - UT_COUNTRY=Russia
+      - UT_COUNTRY_URL=https://en.wikipedia.org/wiki/Russia
+    ports:
+      - 8006:8006
+    networks:
+      - t22_network
+    depends_on:
+      - redis
+
+
+  ms_7_stats:
+    container_name: t22_ms_7_stats
+    build:
+      context: .
+      dockerfile: ./ms_7_stats/dockerfile
+    image: t22_ms_7_stats_image
+    restart: always
+    environment:
+      # задержка перед запуском сервиса (секунды)
+      - MS_STATS_RUN_DELAY=90
+      # как часто сервис будет рассылать email (минуты)
+      - MS_STATS_INTERVAL=5
+      # как сервис будет обращаться к db
+      - MS_DB_HOST=t22_ms_2_db
+      - MS_DB_PORT=8002
+      # как сервис будет отправлять email
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_SENDER_EMAIL=${SMTP_SENDER_EMAIL}
+    networks:
+      - t22_network
+    depends_on:
+      - ms_2_db
