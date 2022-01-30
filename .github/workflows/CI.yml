@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    env:
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+      SMTP_SENDER_EMAIL: ${{ secrets.SMTP_SENDER_EMAIL }}
+      UT_USER_EMAIL: ${{ secrets.UT_USER_EMAIL }}
+      UT_SUBSCRIBER_EMAIL: ${{ secrets.UT_SUBSCRIBER_EMAIL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Show docker state (before)
+        run: |
+          docker image ls
+          docker network ls
+          docker container ls
+
+      - name: Build docker images
+        run: docker-compose -f docker-compose.yml build
+
+      - name: Run docker containers
+        run: docker-compose up -d
+
+      - name: Sleep for 180 seconds
+        continue-on-error: true
+        run: sleep 180s
+        shell: bash
+
+      - name: Show docker state (after)
+        run: |
+          docker image ls
+          docker network ls
+          docker container ls
+          docker network inspect t22_network
+
+      - name: Exec unit-tests \ ui
+        continue-on-error: true
+        run: docker exec --tty t22_ms_1_ui python -m unittest -v -f tests.py
+
+      - name: Exec unit-tests \ db
+        continue-on-error: true
+        run: docker exec --tty t22_ms_2_db python -m unittest -v -f tests.py
+
+      - name: Exec unit-tests \ mb
+        continue-on-error: true
+        run: docker exec --tty t22_ms_3_mb python -m unittest -v -f tests.py
+
+      - name: Exec unit-tests \ urlp
+        continue-on-error: true
+        run: docker exec --tty t22_ms_4_urlp python -m unittest -v -f tests.py
+
+      - name: Exec unit-tests \ fp
+        continue-on-error: true
+        run: docker exec --tty t22_ms_5_fp python -m unittest -v -f tests.py
+
+      - name: Exec unit-tests \ cache
+        continue-on-error: true
+        run: docker exec --tty t22_ms_6_cache python -m unittest -v -f tests.py
+
+      - name: Exec unit-tests \ stats
+        continue-on-error: true
+        run: docker exec --tty t22_ms_7_stats python -m unittest -v -f tests.py

@@ -4,11 +4,9 @@ networks:
   t22_network:
     name: t22_network
 
-
 volumes:
   t22_postgres_volume:
     name: t22_postgres_volume
-
 
 services:
   rabbitmq:
@@ -25,7 +23,6 @@ services:
     networks:
       - t22_network
 
-
   redis:
     container_name: t22_redis
     image: redis
@@ -38,7 +35,6 @@ services:
       - 6379:6379
     networks:
       - t22_network
-
 
   postgres:
     container_name: t22_postgres
@@ -56,7 +52,6 @@ services:
       - 5432:5432
     networks:
       - t22_network
-
 
   ms_1_ui:
     container_name: t22_ms_1_ui
@@ -95,7 +90,6 @@ services:
       - ms_3_mb
       - ms_6_cache
 
-
   ms_2_db:
     container_name: t22_ms_2_db
     build:
@@ -129,7 +123,6 @@ services:
     depends_on:
       - postgres
 
-
   ms_3_mb:
     container_name: t22_ms_3_mb
     build:
@@ -162,7 +155,6 @@ services:
     depends_on:
       - rabbitmq
 
-
   ms_4_urlp:
     container_name: t22_ms_4_urlp
     build:
@@ -193,7 +185,6 @@ services:
     depends_on:
       - ms_3_mb
       - ms_6_cache
-
 
   ms_5_fp:
     container_name: t22_ms_5_fp
@@ -226,7 +217,6 @@ services:
     depends_on:
       - ms_4_urlp
 
-
   ms_6_cache:
     container_name: t22_ms_6_cache
     build:
@@ -256,7 +246,6 @@ services:
       - t22_network
     depends_on:
       - redis
-
 
   ms_7_stats:
     container_name: t22_ms_7_stats
