@@ -24,6 +24,7 @@ jobs:
           file: ./ms_1_ui/dockerfile
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/python_bootcamp_hw_22_2:ms_1_ui
+          no-cache: true
 
       - name: Build and push \ db
         uses: docker/build-push-action@v2
@@ -32,6 +33,7 @@ jobs:
           file: ./ms_2_db/dockerfile
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/python_bootcamp_hw_22_2:ms_2_db
+          no-cache: true
 
       - name: Build and push \ mb
         uses: docker/build-push-action@v2
@@ -40,6 +42,7 @@ jobs:
           file: ./ms_3_mb/dockerfile
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/python_bootcamp_hw_22_2:ms_3_mb
+          no-cache: true
 
       - name: Build and push \ urlp
         uses: docker/build-push-action@v2
@@ -48,6 +51,7 @@ jobs:
           file: ./ms_4_urlp/dockerfile
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/python_bootcamp_hw_22_2:ms_4_urlp
+          no-cache: true
 
       - name: Build and push \ fp
         uses: docker/build-push-action@v2
@@ -56,6 +60,7 @@ jobs:
           file: ./ms_5_fp/dockerfile
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/python_bootcamp_hw_22_2:ms_5_fp
+          no-cache: true
 
       - name: Build and push \ cache
         uses: docker/build-push-action@v2
@@ -64,6 +69,7 @@ jobs:
           file: ./ms_6_cache/dockerfile
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/python_bootcamp_hw_22_2:ms_6_cache
+          no-cache: true
 
       - name: Build and push \ stats
         uses: docker/build-push-action@v2
@@ -72,3 +78,4 @@ jobs:
           file: ./ms_7_stats/dockerfile
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/python_bootcamp_hw_22_2:ms_7_stats
+          no-cache: true
