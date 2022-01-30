@@ -121,6 +121,8 @@ services:
     networks:
       - t22_network
     depends_on:
+      - rabbitmq
+      - redis
       - postgres
 
   ms_3_mb:
@@ -154,6 +156,8 @@ services:
       - t22_network
     depends_on:
       - rabbitmq
+      - redis
+      - postgres
 
   ms_4_urlp:
     container_name: t22_ms_4_urlp
@@ -245,7 +249,9 @@ services:
     networks:
       - t22_network
     depends_on:
+      - rabbitmq
       - redis
+      - postgres
 
   ms_7_stats:
     container_name: t22_ms_7_stats

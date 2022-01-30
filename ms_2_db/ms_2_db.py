@@ -62,7 +62,6 @@ class DBRequest(DBModelExt):
     country = Column(String, nullable = False)
     ts = Column(DateTime, nullable = False)
     user = relationship("DBUser", back_populates = "requests")
-    __table_args__ = (UniqueConstraint('user_id', 'country', name = '_requests_uk'), )
 
     def __init__(self, user_id: int, country: str, ts: datetime) -> None:
         self.country = country
@@ -164,13 +163,9 @@ def db_journalize_request(email: str, country: str) -> DBRequest:
             user = session.query(DBUser).filter(DBUser.email == email).one()
         except NoResultFound:
             user = db_create_user(email)
-        # Проверяем существование запроса. Если нет, то создаём.
-        try:
-            request = session.query(DBRequest).filter(
-                DBRequest.user_id == user.id and DBRequest.country == country).one()
-        except NoResultFound:
-            request = DBRequest(user_id = user.id, country = country, ts = datetime.now())
-            session.add(request)
+        # Создаём запрос.
+        request = DBRequest(user_id = user.id, country = country, ts = datetime.now())
+        session.add(request)
         # Коммит.
         session.commit()
         session.refresh(request)
